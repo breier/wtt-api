@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./build
+    image: wtt-api:latest
+    ports: ["27300:80"]
+    volumes: [".:/app:z"]
+    working_dir: /app
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  database:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DATABASE_ROOT_PASSWORD:-!ChangeMeRoot!}
+      - MYSQL_DATABASE=${DATABASE_NAME:-app}
+      - MYSQL_USER=${DATABASE_USER:-app}
+      - MYSQL_PASSWORD=${DATABASE_PASSWORD:-!ChangeMe!}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - database_data:/var/lib/mysql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0-alpine
+    restart: unless-stopped
+
+volumes:
+  database_data:
